@@ -1,3 +1,7 @@
+//	2025-09-10
+//Fix walls with no hole
+
+
 //Rounded Poly Library
 include <polyround.scad>
 
@@ -197,165 +201,168 @@ module light_wall_cut_odd
 	ib_debug=false
 )
 {
-	//fill
-	//	0% whould be all holes
-	//	100% should be all full
-	//	50% should leave half of structure
 
-	//rounding should depend on dimension
-	r_corner = 0.0;
-    
-	//Size of the beams is dependent on fill factor and number of diamonds. One diamond leaves four beams quarter the size of the remaining structure
-	//TODO: A beam is diagonal, I have some wiggle room to do a partition of the space vertical and diagonal, but it requires more math
-    //BUG: I'm leaving 1 beam lattice above and on the side, and two between diamonds
-	w_beam = iw * (1-in_void) / (in_w_holes+1) /2;
-	h_beam = ih * (1-in_void) / (in_h_holes+1) /2;
-    //Compensate by adding a padding
-    w_effective = iw -w_beam * in_padding;
-    h_effective = ih -h_beam * in_padding;
-
-	//Compute size of a full diamond
-	//I leave quarter of a fill to the right and a quarter of a fill to the left
-	//rounding will leave extra space on top of that due to how rounding works
-	w_diamond = w_effective * (0.5 + 0.5) * in_void / in_w_holes;
-	h_diamond = h_effective * (0.5 + 0.5) * in_void / in_h_holes;
-	
-    //  QUARTER DIAMONDS
-    //With any ODD diamond geometry, I place four corners
-    //If I did an even geometry, I would need only two quarters?
-    if (ib_corners == true)
-    {
-        //Bottom Left
-        translate([-w_effective/2+w_beam,-h_effective/2+h_beam,0])
-        diamond_quarter(w_diamond, h_diamond, it, inr_rounding_factor, in_throat);
-
-        //Bottom Right
-        translate([+w_effective/2-w_beam,-h_effective/2+h_beam,0])
-        diamond_quarter(-w_diamond, h_diamond, it, inr_rounding_factor, in_throat);
-        
-        //Top Right
-        translate([+w_effective/2-w_beam,+h_effective/2-h_beam,0])
-        diamond_quarter(-w_diamond, -h_diamond, it, inr_rounding_factor, in_throat);
-        
-        //Top Left
-        translate([-w_effective/2+w_beam,+h_effective/2-h_beam,0])
-        diamond_quarter(+w_diamond, -h_diamond, it, inr_rounding_factor, in_throat);
-    }
-	in_w_holes_half = floor(in_w_holes/2);
-	in_h_holes_half = floor(in_h_holes/2);
-
-    //  INTEGER LATTICE
-    //Those are the full diamonds that are placed at integer position in the lattice
-	//I place all the full diamonds
-    //  W1  -> [0]
-    //  W3  -> [-1, 0, +1]
-    //  W5  -> [-2, -1, 0, +1, +2]
-	for (w_cnt = [-in_w_holes_half : 1 : in_w_holes_half])
+	if ((in_w_holes>0) && (in_h_holes>0))
 	{
-        for (h_cnt = [-in_h_holes_half : in_h_holes_half])
-		{
-            //move by diamond width, plus, beam size
-            translate([
-                w_cnt * (w_diamond+2*w_beam),
-                h_cnt * (h_diamond+2*h_beam),
-                0
-            ])
-			diamond_zround(w_diamond, h_diamond, it, inr_rounding_factor, in_throat);
-        }
-    }	
+		//fill
+		//	0% whould be all holes
+		//	100% should be all full
+		//	50% should leave half of structure
 
-    //  HALF LATTICE
-    //When there are more diamonds, I need an even number of diamonds placed at half integer position within the lattice to fill the gaps
-    //  W3  -> [-0.5, +0.5]
-    //  W5  -> [-1.5, -0.5, +0.5, +1.5]
-    
-    if ((in_w_holes > 1) && (in_h_holes > 1))
-    {
-        in_w_inner_holes_half = ((in_w_holes)/4);
-        in_h_inner_holes_half = ((in_h_holes)/4);
-		if (ib_debug)
-        echo("Inner Diamonds" );
-        //I'm better off just doing the math from lattice indexes
-        for (w_cnt_inner = [0 : in_w_holes -2] )
-        {
-            //Turns the integer index into lattice indexes
-            w_index = -in_w_holes/2+w_cnt_inner+1;
-            for (h_cnt_inner = [0 : in_h_holes -2] )
-            {
-                h_index = -in_h_holes/2+h_cnt_inner+1;
-                if (ib_debug)
-                echo("W: ",w_index, " | H: ", h_index );
-              
-                //move by diamond width, plus, beam size
-                translate([
-                    w_index * (w_diamond+2*w_beam),
-                    h_index * (h_diamond+2*h_beam),
-                    0
-                ])
-                diamond_zround(w_diamond, h_diamond, it, inr_rounding_factor,in_throat);
-            }
-        }
-        
-    }
-    
-    // HALF DIAMONDS HORIZONTAL
-    //To complete the pattern now I need the side half diamonds
-    
-    if ((ib_w_sides == true) && (in_w_holes > 1))
-    {
-		if (ib_debug)
-        echo("W Half Diamonds:" );
-        for (w_cnt_half = [0 : in_w_holes -2] )
-        {
-            w_index = -in_w_holes/2+w_cnt_half+1;
+		//rounding should depend on dimension
+		r_corner = 0.0;
+		
+		//Size of the beams is dependent on fill factor and number of diamonds. One diamond leaves four beams quarter the size of the remaining structure
+		//TODO: A beam is diagonal, I have some wiggle room to do a partition of the space vertical and diagonal, but it requires more math
+		//BUG: I'm leaving 1 beam lattice above and on the side, and two between diamonds
+		w_beam = iw * (1-in_void) / (in_w_holes+1) /2;
+		h_beam = ih * (1-in_void) / (in_h_holes+1) /2;
+		//Compensate by adding a padding
+		w_effective = iw -w_beam * in_padding;
+		h_effective = ih -h_beam * in_padding;
+
+		//Compute size of a full diamond
+		//I leave quarter of a fill to the right and a quarter of a fill to the left
+		//rounding will leave extra space on top of that due to how rounding works
+		w_diamond = w_effective * (0.5 + 0.5) * in_void / in_w_holes;
+		h_diamond = h_effective * (0.5 + 0.5) * in_void / in_h_holes;
+		
+		//  QUARTER DIAMONDS
+		//With any ODD diamond geometry, I place four corners
+		//If I did an even geometry, I would need only two quarters?
+		if (ib_corners == true)
+		{
+			//Bottom Left
+			translate([-w_effective/2+w_beam,-h_effective/2+h_beam,0])
+			diamond_quarter(w_diamond, h_diamond, it, inr_rounding_factor, in_throat);
+
+			//Bottom Right
+			translate([+w_effective/2-w_beam,-h_effective/2+h_beam,0])
+			diamond_quarter(-w_diamond, h_diamond, it, inr_rounding_factor, in_throat);
+			
+			//Top Right
+			translate([+w_effective/2-w_beam,+h_effective/2-h_beam,0])
+			diamond_quarter(-w_diamond, -h_diamond, it, inr_rounding_factor, in_throat);
+			
+			//Top Left
+			translate([-w_effective/2+w_beam,+h_effective/2-h_beam,0])
+			diamond_quarter(+w_diamond, -h_diamond, it, inr_rounding_factor, in_throat);
+		}
+		in_w_holes_half = floor(in_w_holes/2);
+		in_h_holes_half = floor(in_h_holes/2);
+
+		//  INTEGER LATTICE
+		//Those are the full diamonds that are placed at integer position in the lattice
+		//I place all the full diamonds
+		//  W1  -> [0]
+		//  W3  -> [-1, 0, +1]
+		//  W5  -> [-2, -1, 0, +1, +2]
+		for (w_cnt = [-in_w_holes_half : 1 : in_w_holes_half])
+		{
+			for (h_cnt = [-in_h_holes_half : in_h_holes_half])
+			{
+				//move by diamond width, plus, beam size
+				translate([
+					w_cnt * (w_diamond+2*w_beam),
+					h_cnt * (h_diamond+2*h_beam),
+					0
+				])
+				diamond_zround(w_diamond, h_diamond, it, inr_rounding_factor, in_throat);
+			}
+		}	
+
+		//  HALF LATTICE
+		//When there are more diamonds, I need an even number of diamonds placed at half integer position within the lattice to fill the gaps
+		//  W3  -> [-0.5, +0.5]
+		//  W5  -> [-1.5, -0.5, +0.5, +1.5]
+		
+		if ((in_w_holes > 1) && (in_h_holes > 1))
+		{
+			in_w_inner_holes_half = ((in_w_holes)/4);
+			in_h_inner_holes_half = ((in_h_holes)/4);
 			if (ib_debug)
-            echo("W: ", w_index );
-            //LOWER HALF DIAMOND
-            translate([
-                w_index *(2*w_beam +w_diamond),
-                -h_effective/2+h_beam,
-                0
-            ])
-            half_w_diamond(w_diamond, h_diamond, it, inr_rounding_factor,in_throat);
-            //UPPER HALF DIAMOND
-            translate([
-                w_index *(2*w_beam +w_diamond),
-                +h_effective/2-h_beam,
-                0
-            ])
-            half_w_diamond(w_diamond, -h_diamond, it, inr_rounding_factor,in_throat);
-        }
-    } 
-    
-    // HALF DIAMONDS VERTICAL
-    //To complete the pattern now I need the side half diamonds
-    
-    if ((ib_h_sides == true) && (in_h_holes > 1))
-    {
-		if (ib_debug)
-        echo("H Half Diamonds:" );
-        for (h_cnt_half = [0 : in_h_holes -2] )
-        {
-            h_index = -in_h_holes/2+h_cnt_half+1;
+			echo("Inner Diamonds" );
+			//I'm better off just doing the math from lattice indexes
+			for (w_cnt_inner = [0 : in_w_holes -2] )
+			{
+				//Turns the integer index into lattice indexes
+				w_index = -in_w_holes/2+w_cnt_inner+1;
+				for (h_cnt_inner = [0 : in_h_holes -2] )
+				{
+					h_index = -in_h_holes/2+h_cnt_inner+1;
+					if (ib_debug)
+					echo("W: ",w_index, " | H: ", h_index );
+				  
+					//move by diamond width, plus, beam size
+					translate([
+						w_index * (w_diamond+2*w_beam),
+						h_index * (h_diamond+2*h_beam),
+						0
+					])
+					diamond_zround(w_diamond, h_diamond, it, inr_rounding_factor,in_throat);
+				}
+			}
+			
+		}
+		
+		// HALF DIAMONDS HORIZONTAL
+		//To complete the pattern now I need the side half diamonds
+		
+		if ((ib_w_sides == true) && (in_w_holes > 1))
+		{
 			if (ib_debug)
-            echo("H: ", h_index );
-            //LEFT HALF DIAMOND
-            translate([
-                -w_effective/2+w_beam,
-                h_index *(2*h_beam +h_diamond),
-                0
-            ])
-            half_h_diamond(w_diamond, h_diamond, it, inr_rounding_factor,in_throat);
-            //RIGHT HALF DIAMOND
-            translate([
-                +w_effective/2-w_beam,
-                h_index *(2*h_beam +h_diamond),
-                0
-            ])
-            half_h_diamond(-w_diamond, h_diamond, it, inr_rounding_factor,in_throat);
-        }
-    }
-    
+			echo("W Half Diamonds:" );
+			for (w_cnt_half = [0 : in_w_holes -2] )
+			{
+				w_index = -in_w_holes/2+w_cnt_half+1;
+				if (ib_debug)
+				echo("W: ", w_index );
+				//LOWER HALF DIAMOND
+				translate([
+					w_index *(2*w_beam +w_diamond),
+					-h_effective/2+h_beam,
+					0
+				])
+				half_w_diamond(w_diamond, h_diamond, it, inr_rounding_factor,in_throat);
+				//UPPER HALF DIAMOND
+				translate([
+					w_index *(2*w_beam +w_diamond),
+					+h_effective/2-h_beam,
+					0
+				])
+				half_w_diamond(w_diamond, -h_diamond, it, inr_rounding_factor,in_throat);
+			}
+		} 
+		
+		// HALF DIAMONDS VERTICAL
+		//To complete the pattern now I need the side half diamonds
+		
+		if ((ib_h_sides == true) && (in_h_holes > 1))
+		{
+			if (ib_debug)
+			echo("H Half Diamonds:" );
+			for (h_cnt_half = [0 : in_h_holes -2] )
+			{
+				h_index = -in_h_holes/2+h_cnt_half+1;
+				if (ib_debug)
+				echo("H: ", h_index );
+				//LEFT HALF DIAMOND
+				translate([
+					-w_effective/2+w_beam,
+					h_index *(2*h_beam +h_diamond),
+					0
+				])
+				half_h_diamond(w_diamond, h_diamond, it, inr_rounding_factor,in_throat);
+				//RIGHT HALF DIAMOND
+				translate([
+					+w_effective/2-w_beam,
+					h_index *(2*h_beam +h_diamond),
+					0
+				])
+				half_h_diamond(-w_diamond, h_diamond, it, inr_rounding_factor,in_throat);
+			}
+		}
+    } //If there are holes
 }
 
 module light_wall
@@ -469,7 +476,7 @@ if (false)
         it = 3,
         //Cutout, for vertical printing make more W cutouts to make angle sharper
         in_w_holes = 7,
-        in_h_holes = 2,
+        in_h_holes = 3,
         //Bigger means LESS rounded. The closer you go to 1, the more the cutouts become circles. The higher you go 10, 100, 1000, the sharper the corners are
         inr_rounding_factor = 5,
         //Void, 0 mean no void, full. 1 mean all voids. Controls how much materal is removed
@@ -516,6 +523,24 @@ if (false)
         //Cutout, for vertical printing make more W cutouts to make angle sharper and easier to print MUST BE ODD NUMBER
         in_w_holes = 2,
         in_h_holes = 1,
+        //Void, 0 mean no void, full. 1 mean all voids. Controls how much materal is removed
+        in_void = 0.8
+    );   
+}
+
+//NO HOLE
+//make a full wall
+if (false)
+{
+    //Default construction, without corner and sides and reduced padding
+    light_wall
+    (
+        iw = 30,
+        ih = 20,
+        it = 3,
+        //Cutout, for vertical printing make more W cutouts to make angle sharper and easier to print MUST BE ODD NUMBER
+        in_w_holes = 0,
+        in_h_holes = 0,
         //Void, 0 mean no void, full. 1 mean all voids. Controls how much materal is removed
         in_void = 0.8
     );   
