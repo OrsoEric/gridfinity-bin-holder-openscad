@@ -8,6 +8,7 @@
 
 include <libs/gridfinity_modules.scad>
 include <libs/light_wall_zround.scad>
+include <libs/lib_text.scad>
 
 module rounded_rectangle
 (
@@ -411,43 +412,31 @@ module gridfinity_light_bin
 
 			if (i_x_label==true)
 			{
-				c_h_text = 4;
-				c_z_text = 1;
-				translate([0,+6+1,0])
-				mirror([1,0,0])
-				linear_extrude(c_z_text)
-				text
+				translate([0,gridfinity_pitch/4,0])
+				text_line
 				(
-					str(in_w, "x", in_h, "x", round(iz_top/7),"U"),
-					size=6,
-					font = "DejaVu Sans:style=Bold",
-					halign = "center",
-					valign = "center"
+					i_s_text = str(in_w, "x", in_h, "x", iz_top),
+					i_l_text = 6.0,
+					i_h_text = 1,
+					//Mirror horizontally for bottom extrusion
+					i_x_mirror = true
 				);
-				translate([0,-0,0])
-				mirror([1,0,0])
-				linear_extrude(c_z_text)
-				text
-				(
-					str("github.com"),
-					size=c_h_text,
-					font = "DejaVu Sans:style=Bold",
-					halign = "center",
-					valign = "center"
-				);
-				translate([0,-c_h_text-1,0])
-				mirror([1,0,0])
-				linear_extrude(c_z_text)
-				text
-				(
-					str("/OrsoEric"),
-					size=c_h_text,
-					font = "DejaVu Sans:style=Bold",
-					halign = "center",
-					valign = "center"
-				);
-				
 
+				translate([0,-gridfinity_pitch/4,0])
+				text_lines
+				(
+					i_as_text = 
+					[							
+						str("github.com"),
+						str("/OrsoEric")
+					],
+					i_l_text = 4,
+					i_h_text = 1,
+					// Margin between lines
+					i_m_line = 1,
+					//Mirror horizontally for bottom extrusion
+					i_x_mirror = true
+				);
 
 			}
 		} //END UNION NEGATIVE
@@ -459,11 +448,11 @@ if (true)
 	gridfinity_light_bin
 	(
 		1,
-		2,
+		1,
 		//Height of the bin from ground to top of the wall
 		7*10,
 		//Wall Thickness
-		1.5,
+		2.5,
 		//The base is cut by this amount to allow tiling, doesn't change the shape of the gridfinity mating socket
 		im_clearance = 0.75
 

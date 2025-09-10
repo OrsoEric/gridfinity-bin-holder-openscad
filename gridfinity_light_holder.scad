@@ -6,8 +6,10 @@
 //And the top is extruded to be stackable
 
 
-include <gridfinity_modules.scad>
-include <light_wall_zround.scad>
+include <libs/gridfinity_modules.scad>
+include <libs/light_wall_zround.scad>
+//Extrude text at the bottom of the first bin
+include <libs/lib_text.scad>
 
 //Defines upper and lower hinge that lock with a sphere and an hole
 //The upper hinge needs to be on the low edge
@@ -147,14 +149,48 @@ module gridfinity_light_holder
 	n_h_holes = 1 +2*floor(in_h*gridfinity_pitch/cl_mm_per_hole/2);
 	echo("HOLES | W: ", n_w_holes, " | H: ", n_h_holes, " | Z: ", n_z_holes);
 
-    //Base of the gridfinity plate. Act as lid for the level below
-	gridcopy(in_w, in_h)
-    pad_oversize
-	(
-		1,
-		1,
-		margins=im_mate
-	);
+	difference()
+	{
+		//Base of the gridfinity plate. Act as lid for the level below
+		gridcopy(in_w, in_h)
+		pad_oversize
+		(
+			1,
+			1,
+			margins=im_mate
+		);
+		union()
+		{
+			translate([0,gridfinity_pitch/4,0])
+			text_line
+			(
+				i_s_text = str(in_w, "x", in_h, "x", h_wall),
+				i_l_text = 6.0,
+				i_h_text = 1,
+				//Mirror horizontally for bottom extrusion
+				i_x_mirror = true
+			);
+
+			translate([0,-gridfinity_pitch/4,0])
+			text_lines
+			(
+				i_as_text = 
+				[							
+					str("github.com"),
+					str("/OrsoEric")
+				],
+				i_l_text = 4,
+				i_h_text = 1,
+				// Margin between lines
+				i_m_line = 1,
+				//Mirror horizontally for bottom extrusion
+				i_x_mirror = true
+			);
+
+
+		}
+
+	}
     //Put a skinni gridfinity frame above
     translate([0,0,h_base+imz_female_bottom])
     frame_plain
@@ -319,19 +355,26 @@ module gridfinity_light_holder
     //-------------------------------------------------------------------------
 	// Vertical structural elements to help integrity of the wall
 
+	//How buried is the pillar inside the wall. 1.0 means it's half out and doesn't intrude
+	k_pillar_buried_w = 1.0;
+	r_pillar_w = t_wall * 1.0;
+
+	k_pillar_buried_h = 0.8;
+	r_pillar_h = t_wall * 0.8;
+
 	//-W
 	if (in_h > 0)
 	for (n_y=[1:in_h-1])
 	translate
 	([
-		n_side*(-0.5)-n_margin-t_wall*0.6,
+		n_side*(-0.5)-n_margin-t_wall*k_pillar_buried_w,
 		n_side*(n_y-0.5),
 		h_wall_base
 	])
 	color("#440044")
 	cylinder
 	(
-		r=t_wall,
+		r=r_pillar_w,
 		h=h_wall,
 		$fn=30
 	);
@@ -341,14 +384,14 @@ module gridfinity_light_holder
 	for (n_y=[1:in_h-1])
 	translate
 	([
-		n_side*(in_w-0.5)+n_margin+t_wall*0.6,
+		n_side*(in_w-0.5)+n_margin+t_wall*k_pillar_buried_w,
 		n_side*(n_y-0.5),
 		h_wall_base
 	])
 	color("#440044")
 	cylinder
 	(
-		r=t_wall,
+		r=r_pillar_w,
 		h=h_wall,
 		$fn=30
 	);
@@ -359,13 +402,13 @@ module gridfinity_light_holder
 	translate
 	([
 		n_side*(n_x-0.5)+0*r_rounding,
-		n_side*(-0.5)-n_margin-t_wall*0.6,
+		n_side*(-0.5)-n_margin-t_wall*k_pillar_buried_h,
 		h_wall_base
 	])
 	color("#440044")
 	cylinder
 	(
-		r=t_wall,
+		r=r_pillar_h,
 		h=h_wall,
 		$fn=30
 	);
@@ -376,13 +419,13 @@ module gridfinity_light_holder
 	translate
 	([
 		n_side*(n_x-0.5)+0*r_rounding,
-		n_side*(in_h-0.5)+n_margin+t_wall*0.6,
+		n_side*(in_h-0.5)+n_margin+t_wall*k_pillar_buried_h,
 		h_wall_base
 	])
 	color("#440044")
 	cylinder
 	(
-		r=t_wall,
+		r=r_pillar_h,
 		h=h_wall,
 		$fn=30
 	);
