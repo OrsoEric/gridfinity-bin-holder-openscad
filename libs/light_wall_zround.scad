@@ -466,7 +466,7 @@ if (false)
 }
 
 //ADVANCED wall construction, showing sane parameters for horizontal print with reduced padding
-if (false)
+if (true)
 {
     //Advanced construction, with corner sides and increased padding
     light_wall
